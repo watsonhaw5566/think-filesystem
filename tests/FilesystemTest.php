@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace hulang\filesystem\tests;
 
 use hulang\filesystem\Driver;
+use hulang\filesystem\driver\Local;
 use hulang\filesystem\Filesystem;
 use think\App;
 
@@ -58,7 +59,7 @@ class FilesystemTest extends TestCase
     {
         $driver = $this->filesystem->disk('local');
         $this->assertInstanceOf(Driver::class, $driver);
-        $this->assertInstanceOf(\hulang\filesystem\driver\Local::class, $driver);
+        $this->assertInstanceOf(Local::class, $driver);
     }
 
     public function testDiskWithoutNameUsesDefault()

@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace hulang\filesystem\tests;
 
+use GuzzleHttp\Psr7\Utils;
+use hulang\filesystem\Driver;
+use hulang\filesystem\driver\Local;
 use League\Flysystem\Filesystem as Flysystem;
-use League\Flysystem\Local\LocalFilesystemAdapter;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\FilesystemException;
 use League\Flysystem\UnableToReadFile;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use think\File;
 
 class DriverTest extends TestCase
 {
-    private ?\hulang\filesystem\driver\Local $driver = null;
+    private ?Local $driver = null;
 
     private ?string $tmpDir = null;
 
@@ -67,7 +73,7 @@ class DriverTest extends TestCase
 
     public function testPutWithStreamInterface()
     {
-        $stream = \GuzzleHttp\Psr7\Utils::streamFor('psr7 stream data');
+        $stream = Utils::streamFor('psr7 stream data');
         // 仅在 guzzlehttp/psr7 可用时测试；否则跳过，通过 StreamInterface 模拟
         // 注意：项目未引入 guzzlehttp/psr7，这里通过 fopen 加 writeStream 替代该分支
         // 我们仍保证 writeStream 分支能被覆盖（见 testWriteStream）
@@ -344,7 +350,7 @@ class DriverTest extends TestCase
 
     private function extractRootFromDriver($driver): string
     {
-        $prop = $this->getPrivateProperty(\hulang\filesystem\Driver::class, 'config');
+        $prop = $this->getPrivateProperty(Driver::class, 'config');
         $config = $prop->getValue($driver);
         return $config['root'];
     }
@@ -360,7 +366,7 @@ class DriverTest extends TestCase
     public function testGetAdapterReturnsFilesystemAdapter()
     {
         $adapter = $this->driver->getAdapter();
-        $this->assertInstanceOf(\League\Flysystem\FilesystemAdapter::class, $adapter);
+        $this->assertInstanceOf(FilesystemAdapter::class, $adapter);
     }
 
     // ==== 文件上传（putFile / putFileAs）====
@@ -385,7 +391,7 @@ class DriverTest extends TestCase
         $tmp = sys_get_temp_dir() . '/think_filesystem_upload2_' . uniqid() . '.txt';
         file_put_contents($tmp, 'file content');
 
-        $file = new \think\File($tmp);
+        $file = new File($tmp);
         $result = $this->driver->putFile('uploads2', $file);
 
         $this->assertIsString($result);
@@ -438,7 +444,7 @@ class DriverTest extends TestCase
             $driver->put('foo.txt', 'bar');
             $this->fail('Expected exception was not thrown');
         } catch (\Throwable $e) {
-            $this->assertInstanceOf(\League\Flysystem\FilesystemException::class, $e);
+            $this->assertInstanceOf(FilesystemException::class, $e);
         }
 
         $this->rmdirRecursive($this->extractRootFromDriver($driver));
@@ -450,7 +456,7 @@ class DriverTest extends TestCase
     {
         $this->driver->put('download.bin', 'binary data');
         $response = $this->driver->response('download.bin');
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $response);
+        $this->assertInstanceOf(StreamedResponse::class, $response);
 
         ob_start();
         $response->sendContent();
@@ -462,7 +468,7 @@ class DriverTest extends TestCase
     {
         $this->driver->put('dl.txt', 'data');
         $response = $this->driver->download('dl.txt', 'custom.txt');
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $response);
+        $this->assertInstanceOf(StreamedResponse::class, $response);
         $this->assertStringContainsString('attachment', $response->headers->get('Content-Disposition', ''));
         $this->assertStringContainsString('custom.txt', $response->headers->get('Content-Disposition', ''));
     }

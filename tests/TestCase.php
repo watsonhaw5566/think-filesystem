@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace hulang\filesystem\tests;
 
+use hulang\filesystem\driver\Local;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use ReflectionClass;
+use think\Cache;
 
 abstract class TestCase extends PHPUnitTestCase
 {
     protected function getMockCache()
     {
-        return $this->createMock(\think\Cache::class);
+        return $this->createMock(Cache::class);
     }
 
     protected function createLocalDriver(array $extraConfig = [])
@@ -24,7 +26,7 @@ abstract class TestCase extends PHPUnitTestCase
             'root' => $tmpDir,
         ], $extraConfig);
 
-        $driver = new \hulang\filesystem\driver\Local($this->getMockCache(), $config);
+        $driver = new Local($this->getMockCache(), $config);
 
         return $driver;
     }
