@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\tests\driver;
+namespace watsonhaw\filesystem\tests\driver;
 
 use Overtrue\Flysystem\Qiniu\QiniuAdapter;
-use hulang\filesystem\driver\Qiniu;
-use hulang\filesystem\tests\TestCase;
+use watsonhaw\filesystem\driver\Qiniu;
+use watsonhaw\filesystem\tests\TestCase;
 
 class QiniuTest extends TestCase
 {

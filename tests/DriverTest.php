@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\tests;
+namespace watsonhaw\filesystem\tests;
 
 use GuzzleHttp\Psr7\Utils;
-use hulang\filesystem\Driver;
-use hulang\filesystem\driver\Local;
+use watsonhaw\filesystem\Driver;
+use watsonhaw\filesystem\driver\Local;
 use League\Flysystem\Filesystem as Flysystem;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\FilesystemException;
@@ -24,7 +24,7 @@ class DriverTest extends TestCase
     {
         parent::setUp();
         $this->driver = $this->createLocalDriver();
-        $prop = $this->getPrivateProperty(\hulang\filesystem\Driver::class, 'config');
+        $prop = $this->getPrivateProperty(\watsonhaw\filesystem\Driver::class, 'config');
         $config = $prop->getValue($this->driver);
         $this->tmpDir = $config['root'];
     }

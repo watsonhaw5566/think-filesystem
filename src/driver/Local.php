@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\driver;
+namespace watsonhaw\filesystem\driver;
 
 use League\Flysystem\Local\LocalFilesystemAdapter;
 use League\Flysystem\UnixVisibility\PortableVisibilityConverter;
 use League\Flysystem\Visibility;
-use hulang\filesystem\Driver;
+use watsonhaw\filesystem\Driver;
 
 class Local extends Driver
 {

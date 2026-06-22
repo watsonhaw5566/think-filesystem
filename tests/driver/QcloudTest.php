@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\tests\driver;
+namespace watsonhaw\filesystem\tests\driver;
 
 use Overtrue\Flysystem\Cos\CosAdapter;
-use hulang\filesystem\driver\Qcloud;
-use hulang\filesystem\tests\TestCase;
+use watsonhaw\filesystem\driver\Qcloud;
+use watsonhaw\filesystem\tests\TestCase;
 
 class QcloudTest extends TestCase
 {

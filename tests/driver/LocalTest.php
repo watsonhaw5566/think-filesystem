@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\tests\driver;
+namespace watsonhaw\filesystem\tests\driver;
 
-use hulang\filesystem\driver\Local;
-use hulang\filesystem\tests\TestCase;
+use watsonhaw\filesystem\driver\Local;
+use watsonhaw\filesystem\tests\TestCase;
 use League\Flysystem\Local\LocalFilesystemAdapter;
 
 class LocalTest extends TestCase

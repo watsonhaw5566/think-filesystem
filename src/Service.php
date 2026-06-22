@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem;
+namespace watsonhaw\filesystem;
 
 class Service extends \think\Service
 {

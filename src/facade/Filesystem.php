@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\facade;
+namespace watsonhaw\filesystem\facade;
 
 use think\Facade;
-use hulang\filesystem\Driver;
+use watsonhaw\filesystem\Driver;
 
 /**
  * Class Filesystem
  * @package think\facade
- * @mixin \hulang\filesystem\Filesystem
+ * @mixin \watsonhaw\filesystem\Filesystem
  * @method static Driver disk(?string $name = null)
  * @method static Driver cloud(?string $name = null)
  * @method static mixed getConfig(?string $name = null, mixed $default = null)

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\driver;
+namespace watsonhaw\filesystem\driver;
 
 use Overtrue\Flysystem\Qiniu\QiniuAdapter;
-use hulang\filesystem\Driver;
+use watsonhaw\filesystem\Driver;
 
 class Qiniu extends Driver
 {

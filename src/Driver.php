@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem;
+namespace watsonhaw\filesystem;
 
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemAdapter;
@@ -32,7 +32,7 @@ use voku\helper\ASCII;
 
 /**
  * Class Driver
- * @package hulang\filesystem
+ * @package watsonhaw\filesystem
  * @mixin Filesystem
  */
 abstract class Driver
@@ -76,6 +76,9 @@ abstract class Driver
         }
 
         $this->prefixer = new PathPrefixer($root, $separator);
+
+        // 同步更新 config 中的 root,确保 Local 驱动的 createAdapter() 使用的 root 与 prefixer 一致
+        $this->config['root'] = $root;
 
         // 对适配器进行只读包装，并且把包装后的适配器回写，
         // 这样 getAdapter() / url() 拿到的都是实际生效的那一层。
@@ -134,7 +137,7 @@ abstract class Driver
 
         while (true) {
             if ($unwrapped instanceof PathPrefixedAdapter) {
-                $inner = $this->readAdapterInner($unwrapped, 'innerAdapter');
+                $inner = $this->readAdapterInner($unwrapped, 'adapter');
                 if ($inner instanceof FilesystemAdapter) {
                     $unwrapped = $inner;
                     continue;

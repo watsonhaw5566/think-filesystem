@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\tests;
+namespace watsonhaw\filesystem\tests;
 
-use hulang\filesystem\driver\Local;
+use watsonhaw\filesystem\driver\Local;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use ReflectionClass;
 use think\Cache;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem\driver;
+namespace watsonhaw\filesystem\driver;
 
 use Overtrue\Flysystem\Cos\CosAdapter;
-use hulang\filesystem\Driver;
+use watsonhaw\filesystem\Driver;
 
 class Qcloud extends Driver
 {

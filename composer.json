@@ -1,5 +1,5 @@
 {
-  "name": "hulang/think-filesystem",
+  "name": "watsonhaw/think-filesystem",
   "description": "thinkphp 8.0 for filesystem oss,include Aliyun and Qiniu COS OBS",
   "type": "library",
   "require": {
@@ -31,18 +31,18 @@
   },
   "autoload": {
     "psr-4": {
-      "hulang\\filesystem\\": "src/"
+      "watsonhaw\\filesystem\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "hulang\\filesystem\\tests\\": "tests/"
+      "watsonhaw\\filesystem\\tests\\": "tests/"
     }
   },
   "extra": {
     "think": {
       "services": [
-        "hulang\\filesystem\\Service"
+        "watsonhaw\\filesystem\\Service"
       ]
     }
   },

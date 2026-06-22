@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace hulang\filesystem;
+namespace watsonhaw\filesystem;
 
 use InvalidArgumentException;
 use think\helper\Arr;
@@ -18,7 +18,7 @@ class Filesystem extends Manager
      */
     protected $customCreators = [];
 
-    protected $namespace = '\\hulang\\filesystem\\driver\\';
+    protected $namespace = '\\watsonhaw\\filesystem\\driver\\';
 
     /**
      * 获取指定名称的磁盘驱动实例
@@ -152,7 +152,7 @@ class Filesystem extends Manager
     public function getDiskConfig(string $disk, ?string $name = null, mixed $default = null): mixed
     {
         // 尝试获取指定磁盘的配置
-        if ($config = $this->getConfig("disks.{$disk}")) {
+        if (($config = $this->getConfig("disks.{$disk}")) !== null) {
             // 使用 Arr::get 方法获取配置项的值,如果配置项不存在,则返回默认值
             return Arr::get($config, $name, $default);
         }
