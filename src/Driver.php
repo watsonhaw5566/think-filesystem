@@ -621,7 +621,14 @@ abstract class Driver
     public function putFile(string $path, File|string $file, mixed $rule = null, array $options = []): string|false
     {
         if (is_string($file)) {
-            $file = new File($file);
+            try {
+                $file = new File($file);
+            } catch (\Throwable $e) {
+                return false;
+            }
+        }
+        if (is_array($rule)) {
+            return $this->putFileAs($path, $file, $file->hashName(null), $rule);
         }
         return $this->putFileAs($path, $file, $file->hashName($rule), $options);
     }
@@ -638,7 +645,10 @@ abstract class Driver
     public function putFileAs(string $path, File $file, string $name, array $options = []): string|false
     {
         $realPath = $file->getRealPath();
-        $stream   = $realPath !== false ? fopen($realPath, 'r') : false;
+        if ($realPath === false || ! is_file($realPath)) {
+            return false;
+        }
+        $stream = fopen($realPath, 'r');
         if ($stream === false) {
             return false;
         }
@@ -670,7 +680,21 @@ abstract class Driver
         $options = is_string($options) ? ['visibility' => $options] : (array) $options;
 
         if ($contents instanceof File || $contents instanceof UploadedFile) {
-            return (bool) $this->putFile($path, $contents, $options);
+            $realPath = $contents->getRealPath();
+            if ($realPath === false || ! is_file($realPath)) {
+                return false;
+            }
+            $stream = fopen($realPath, 'r');
+            if ($stream === false) {
+                return false;
+            }
+            try {
+                return $this->writeStream($path, $stream, $options);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
         }
 
         try {
@@ -686,7 +710,7 @@ abstract class Driver
             } else {
                 $this->write($path, $contents, $options);
             }
-        } catch (UnableToWriteFile | UnableToSetVisibility $e) {
+        } catch (FilesystemException $e) {
             throw_if($this->throwsExceptions(), $e);
             return false;
         }
@@ -785,6 +809,9 @@ abstract class Driver
     public function deleteDirectory(string $directory): bool
     {
         try {
+            if (! $this->filesystem->directoryExists($directory)) {
+                return false;
+            }
             $this->filesystem->deleteDirectory($directory);
         } catch (UnableToDeleteDirectory $e) {
             throw_if($this->throwsExceptions(), $e);

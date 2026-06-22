@@ -26,9 +26,17 @@
       "email": "348748267@qq.com"
     }
   ],
+  "scripts": {
+    "test": "phpunit"
+  },
   "autoload": {
     "psr-4": {
       "hulang\\filesystem\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "hulang\\filesystem\\tests\\": "tests/"
     }
   },
   "extra": {
@@ -37,5 +45,8 @@
         "hulang\\filesystem\\Service"
       ]
     }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0"
   }
 }
