@@ -17,7 +17,7 @@ class Qiniu extends Driver
      *
      * @return QiniuAdapter 返回一个配置好的七牛云存储适配器实例
      */
-    protected function createAdapter()
+    protected function createAdapter(): QiniuAdapter
     {
         return new QiniuAdapter(
             $this->config['access_key'],

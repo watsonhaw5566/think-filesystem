@@ -27,7 +27,7 @@ class Local extends Driver
      *
      * @return LocalFilesystemAdapter 本地文件系统适配器实例
      */
-    protected function createAdapter()
+    protected function createAdapter(): LocalFilesystemAdapter
     {
         // 根据配置中的权限和可见性设置,转换为便携式可见性对象
         $visibility = PortableVisibilityConverter::fromArray(

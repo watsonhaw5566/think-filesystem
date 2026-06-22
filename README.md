@@ -1,6 +1,6 @@
 <h2><p align="center">think-filesystem</p></h2>
 <p align="center">thinkphp 8.0.0+ 的文件系统扩展包</p>
-<p align="center">支持上传阿里云OSS、七牛、腾讯云COS、华为云OBS、awsS3、FTP、SFTP、WEB</p>
+<p align="center">支持本地文件系统、阿里云OSS、七牛云、腾讯云COS、华为云OBS</p>
 
 #### 环境
 
@@ -9,15 +9,11 @@
 
 #### 支持
 
-1. 阿里云
-2. 七牛云
-3. 腾讯云
-4. 华为云
-5. AwsS3
-6. google
-7. ftp
-8. sftp
-9. web(自定义扩展)
+1. 本地（Local）
+2. 阿里云 OSS
+3. 七牛云
+4. 腾讯云 COS
+5. 华为云 OBS
 
 #### 安装
 
@@ -63,76 +59,16 @@ composer require hulang/think-filesystem
     'cdn' => '您的 CDN 域名',
     'scheme' => 'https',
     'read_from_cdn' => false,
+],
+'obs' => [
+    'type' => 'obs',
+    'key' => env('OBS_KEY'),
+    'secret' => env('OBS_SECRET'),
+    'bucket' => env('OBS_BUCKET'),
+    'endpoint' => env('OBS_ENDPOINT'),
+    'is_cname' => env('OBS_IS_CNAME', false),
+    'security_token' => env('OBS_SECURITY_TOKEN'),
 ]
-'obs'=>[
-      'type' =>'obs',
-      'root' => '',
-      'key' => env('OBS_KEY'),
-      'secret' => env('OBS_SECRET'),
-      'bucket' => env('OBS_BUCKET'),
-      'endpoint' => env('OBS_ENDPOINT'),
-      'is_cname' => env('OBS_IS_CNAME', false), //true or false...
-      'security_token' => env('OBS_SECURITY_TOKEN'),//true or false...
-],
-'s3'=>[
-      'type' =>'s3',
-      'credentials' => [
-          'key' => 'S3_KEY',
-          'secret' => 'S3_SECRET',
-      ],
-      'region' => 'S3_REGION',
-      'version' => 'latest',
-      'bucket_endpoint' => false,
-      'use_path_style_endpoint' => false,
-      'endpoint' => 'S3_ENDPOINT',
-      'bucket' => 'S3_BUCKET',
-],
-'google'=>[
-    'type' =>'google',
-    'project_id' => 'GOOGLE_PROJECT_ID',//your-project-id
-    'bucket' => 'GOOGLE_BUCKET', //your-bucket-name
-    'prefix' => '', //optional-prefix 
-],
-'ftp'=[
-    'type' =>'ftp',
-    'host' => 'example.com',
-    'username' => 'username',
-    'password' => 'password',
-    // 可选的 FTP 设置
-    // 'port' => 21,
-    // 'root' => '',
-    // 如果提示:php_connect_nonb之类的错误,请尝试设置为false
-    'passive' => false,
-    // 'ssl' => true,
-    // 'timeout' => 30,
-    // 'url'=>''
-],
-'sftp'=>[
-    'type' =>'sftp',
-    'host' => 'example.com',
-    // 基于基础的身份验证设置...
-    'username' => 'username',
-    'password' => 'password',
-    // 使用加密密码进行基于 SSH 密钥的身份验证的设置...
-    'privateKey' => null,
-    'passphrase' => null,
-    // 可选的 SFTP 设置
-    'port' => 22,
-    'root' => '/path/to/root',
-    'url' => '/path/to/root',
-    'timeout' => 10
-],
-'web' => [
-    'type' => 'web',
-    // 自定义配置
-    'secret_id' => 'd73d84e14cf8cd0c53855c2bea35e95ecf00689b',
-    'secret_key' => '5003aec07e6a2591ef2b9ed5b6e31555ab4bea33',
-    'bucket' => 'bucket',
-    // 请求接口
-    'domain' => 'https://img.你自己的域名.cn/上传接口',
-    // 访问URL
-    'url' => 'https://img.你自己的域名.cn/',
-],
 ```
 
 第三步： 开始使用。 请参考thinkphp文档

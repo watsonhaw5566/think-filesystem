@@ -16,7 +16,7 @@ class Qcloud extends Driver
      * 
      * @return CosAdapter 返回一个CosAdapter实例,用于后续的Cos操作
      */
-    protected function createAdapter()
+    protected function createAdapter(): CosAdapter
     {
         return new CosAdapter($this->config);
     }

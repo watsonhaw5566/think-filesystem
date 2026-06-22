@@ -17,7 +17,7 @@ class Aliyun extends Driver
      *
      * @return OssAdapter 返回一个使用当前配置初始化的OssAdapter实例
      */
-    protected function createAdapter()
+    protected function createAdapter(): OssAdapter
     {
         return new OssAdapter($this->config);
     }

@@ -11,11 +11,11 @@ use hulang\filesystem\Driver;
  * Class Filesystem
  * @package think\facade
  * @mixin \hulang\filesystem\Filesystem
- * @method static Driver disk(string $name = null) null|string
- * @method static Driver cloud(string $name = null) null|string
- * @method static mixed getConfig(null|string $name = null,mixed $default = null) 获取缓存配置
- * @method static array getDiskConfig(string $disk,null $name = null,null $default = null) 获取磁盘配置
- * @method static string|null getDefaultDriver() 默认驱动
+ * @method static Driver disk(?string $name = null)
+ * @method static Driver cloud(?string $name = null)
+ * @method static mixed getConfig(?string $name = null, mixed $default = null)
+ * @method static mixed getDiskConfig(string $disk, ?string $name = null, mixed $default = null)
+ * @method static mixed getDefaultDriver()
  */
 class Filesystem extends Facade
 {

@@ -51,16 +51,17 @@ class Filesystem extends Manager
     /**
      * 调用自定义驱动程序创建者
      *
-     * 此方法用于调用自定义的驱动程序创建函数,以根据配置创建相应的实例
-     * 它通过配置数组中指定的驱动类型来选择合适的创建函数
+     * 此方法用于调用自定义的驱动程序创建函数，以根据配置创建相应的实例
+     * 它通过驱动类型来选择合适的创建函数，并将应用实例和配置数据传给它
      *
-     * @param array $config 包含驱动类型和相关配置的数组.配置数组中必须包含'driver'键,用于指定驱动类型
-     * @return mixed 返回自定义驱动程序创建函数的返回值,具体类型取决于驱动程序的实现
+     * @param string $type   驱动类型（例如 local / aliyun / qiniu / qcloud）
+     * @param array  $config 当前磁盘的完整配置数组
+     * @return mixed 返回自定义驱动程序创建函数的返回值，具体类型取决于驱动程序的实现
      */
-    protected function callCustomCreator(array $config)
+    protected function callCustomCreator(string $type, array $config): mixed
     {
-        // 使用配置数组中指定的驱动类型,调用相应的自定义创建函数
-        return $this->customCreators[$config['driver']]($this->app, $config);
+        // 使用指定的驱动类型，调用相应的自定义创建函数
+        return $this->customCreators[$type]($this->app, $config);
     }
 
     /**
@@ -72,9 +73,9 @@ class Filesystem extends Manager
      * @param string $name 存储名称,用于在配置中查找对应的存储类型
      * @return mixed|string 返回解析得到的存储类型,如果配置中没有指定,则为 'local'
      */
-    protected function resolveType(string $name)
+    protected function resolveType(string $name): string
     {
-        return $this->getDiskConfig($name, 'type', 'local');
+        return (string) $this->getDiskConfig($name, 'type', 'local');
     }
 
     /**
@@ -83,9 +84,10 @@ class Filesystem extends Manager
      * @param string $name 配置名称
      * @return mixed 返回解析后的配置信息
      */
-    protected function resolveConfig(string $name)
+    protected function resolveConfig(string $name): array
     {
-        return $this->getDiskConfig($name);
+        $config = $this->getDiskConfig($name);
+        return is_array($config) ? $config : [];
     }
 
     /**
@@ -97,34 +99,27 @@ class Filesystem extends Manager
      * @param string $name 驱动名称
      * @return mixed 驱动实例
      */
-    protected function createDriver(string $name)
+    protected function createDriver(string $name): Driver
     {
-        // 根据驱动名称解析驱动类型
+        // 根据磁盘名称解析驱动类型（例如 local / aliyun / qiniu / qcloud）
         $type = $this->resolveType($name);
 
-        // 如果存在针对此驱动名称的自定义创建器
-        if (isset($this->customCreators[$name])) {
-            // 调用自定义创建器并返回结果
-            return $this->callCustomCreator($type);
+        // 解析当前磁盘的完整配置（需要传给驱动的构造方法）
+        $config = $this->resolveConfig($name);
+
+        // 优先使用自定义驱动创建器（按 $type 匹配，便于一个类型扩展多次）
+        if (isset($this->customCreators[$type])) {
+            $driver = $this->callCustomCreator($type, $config);
+            if ($driver instanceof Driver) {
+                return $driver;
+            }
         }
 
-        // 构建驱动创建方法的名称
-        $method = 'create' . Str::studly($type) . 'Driver';
-
-        // 解析驱动创建所需的参数
-        $params = $this->resolveParams($name);
-
-        // 如果存在对应类型的创建方法
-        if (method_exists($this, $method)) {
-            // 调用对应类型的创建方法并返回结果
-            return $this->$method(...$params);
-        }
-
-        // 如果没有对应类型的创建方法,解析驱动类名
+        // 解析驱动类名：通过 $namespace + Studly($type) 定位，例如 Local、Aliyun
         $class = $this->resolveClass($type);
 
-        // 使用应用实例化驱动类并返回实例
-        return $this->app->invokeClass($class, $params);
+        // 使用应用容器实例化驱动类，同时确保 $config 作为第二个参数被传入
+        return $this->app->make($class, ['config' => $config], true);
     }
 
     /**
@@ -133,7 +128,7 @@ class Filesystem extends Manager
      * @param mixed $default 默认值
      * @return mixed
      */
-    public function getConfig(string $name = null, $default = null)
+    public function getConfig(?string $name = null, mixed $default = null): mixed
     {
         if (!is_null($name)) {
             return $this->app->config->get('filesystem.' . $name, $default);
@@ -143,22 +138,22 @@ class Filesystem extends Manager
 
     /**
      * 获取磁盘配置
-     * 
+     *
      * 从配置文件中获取指定磁盘的配置信息
      * 如果指定了配置项名称,则返回该配置项的值;否则,返回整个磁盘配置数组
      * 如果未找到磁盘配置,则抛出异常
-     * 
+     *
      * @param string $disk 磁盘标识符
-     * @param string $name 配置项名称,可选
+     * @param string|null $name 配置项名称,可选
      * @param mixed $default 当配置项不存在时的默认值,可选
      * @return mixed 返回配置项的值或整个磁盘配置数组
      * @throws InvalidArgumentException 当未找到指定磁盘配置时抛出异常
      */
-    public function getDiskConfig($disk, $name = null, $default = null)
+    public function getDiskConfig(string $disk, ?string $name = null, mixed $default = null): mixed
     {
         // 尝试获取指定磁盘的配置
         if ($config = $this->getConfig("disks.{$disk}")) {
-            // 使用Arr::get方法获取配置项的值,如果配置项不存在,则返回默认值
+            // 使用 Arr::get 方法获取配置项的值,如果配置项不存在,则返回默认值
             return Arr::get($config, $name, $default);
         }
         // 如果未找到磁盘配置,抛出异常
@@ -167,28 +162,28 @@ class Filesystem extends Manager
 
     /**
      * 获取默认驱动
-     * 
+     *
      * 此方法用于获取配置中的默认驱动名称它通过调用内部的getConfig方法
      * 检索配置数据中的'default'键来实现这一功能如果没有设置默认驱动
      * 或者配置中没有定义'default'键,则方法返回null
-     * 
+     *
      * @return mixed|string|null 返回默认驱动的名称,如果未设置则返回null
      */
-    public function getDefaultDriver()
+    public function getDefaultDriver(): mixed
     {
         return $this->getConfig('default');
     }
 
     /**
      * 扩展服务容器中驱动程序的创建功能
-     * 
+     *
      * 该方法允许通过回调函数扩展服务容器中特定驱动程序的创建逻辑,为服务容器的驱动程序创建提供额外的自定义选项
-     * 
+     *
      * @param string $driver 驱动程序的名称
      * @param \Closure $callback 回调函数用于创建驱动程序
      * @return $this 返回服务容器实例,支持链式调用
      */
-    public function extend($driver, \Closure $callback)
+    public function extend(string $driver, \Closure $callback): static
     {
         $this->customCreators[$driver] = $callback;
         return $this;
@@ -198,7 +193,7 @@ class Filesystem extends Manager
      * 动态调用
      * 当尝试调用不存在的方法时,此魔术方法会被调用
      * 它允许将方法调用委托给内部驱动程序实例
-     * 
+     *
      * @param string $method 被调用的方法名称
      * @param array $parameters 传递给方法的参数数组
      * @return mixed 返回驱动程序实例对指定方法调用的结果
