@@ -20,7 +20,7 @@
 第一步：
 
 ```shell
-composer require hulang/think-filesystem
+composer require watsonhaw/think-filesystem
 ```
 
 第二步： 在config/filesystem.php中添加配置
@@ -131,8 +131,8 @@ try {
         ]
     )->check(['image' => $file]);
 
-    $path = \hulang\filesystem\facade\Filesystem::disk('public')->putFile('test', $file);
-    $url = \hulang\filesystem\facade\Filesystem::disk('public')->url($path);
+    $path = \watsonhaw\filesystem\facade\Filesystem::disk('public')->putFile('test', $file);
+    $url = \watsonhaw\filesystem\facade\Filesystem::disk('public')->url($path);
     return json(['path' => $path, 'url'  => $url]);
 } catch (\think\exception\ValidateException $e) {
     echo $e->getMessage();
@@ -142,7 +142,7 @@ try {
 ##### Local 驱动使用示例
 
 ```php
-use hulang\filesystem\facade\Filesystem;
+use watsonhaw\filesystem\facade\Filesystem;
 
 // 使用默认的 local 磁盘
 Filesystem::disk('local')->put('example.txt', 'Hello, think-filesystem!');
