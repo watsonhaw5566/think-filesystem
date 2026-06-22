@@ -8,7 +8,7 @@ use hulang\filesystem\driver\Aliyun;
 use hulang\filesystem\tests\TestCase;
 use yzh52521\Flysystem\Oss\OssAdapter;
 
-class AliyunDriverTest extends TestCase
+class AliyunTest extends TestCase
 {
     public function testCreateAdapterReturnsOssAdapter()
     {

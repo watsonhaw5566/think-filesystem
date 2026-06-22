@@ -8,7 +8,7 @@ use Overtrue\Flysystem\Cos\CosAdapter;
 use hulang\filesystem\driver\Qcloud;
 use hulang\filesystem\tests\TestCase;
 
-class QcloudDriverTest extends TestCase
+class QcloudTest extends TestCase
 {
     public function testCreateAdapterReturnsCosAdapter()
     {

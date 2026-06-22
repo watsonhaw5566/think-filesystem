@@ -8,7 +8,7 @@ use Overtrue\Flysystem\Qiniu\QiniuAdapter;
 use hulang\filesystem\driver\Qiniu;
 use hulang\filesystem\tests\TestCase;
 
-class QiniuDriverTest extends TestCase
+class QiniuTest extends TestCase
 {
     public function testCreateAdapterReturnsQiniuAdapter()
     {
