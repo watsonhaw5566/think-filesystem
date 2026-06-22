@@ -25,6 +25,56 @@ composer require hulang/think-filesystem
 
 第二步： 在config/filesystem.php中添加配置
 
+##### Local 本地驱动
+
+Local 驱动用于将文件存储在服务器的本地文件系统中。最简单的配置只需指定 `root` 目录:
+
+```php
+'local' => [
+    'type' => 'local',
+    'root' => app()->getRootPath() . 'storage',
+],
+```
+
+完整的配置选项如下:
+
+```php
+'public' => [
+    'type' => 'local',
+    // 根目录,所有文件操作都将相对于此路径
+    'root' => app()->getRootPath() . 'storage',
+    // 访问文件的基础 URL,用于 url() 方法生成可访问地址
+    'url' => '/storage',
+    // 默认目录可见性: public(公开) 或 private(私有),默认为 private
+    'visibility' => 'public',
+    // 文件和目录的权限配置
+    'permissions' => [
+        'file' => [
+            'public' => 0644,
+            'private' => 0600,
+        ],
+        'dir' => [
+            'public' => 0755,
+            'private' => 0700,
+        ],
+    ],
+    // 文件锁定模式,默认为 LOCK_EX(排他锁)
+    'lock' => LOCK_EX,
+    // 符号链接处理方式: skip(跳过) 或 disallow(禁止),默认为 disallow
+    'links' => 'skip',
+    // 路径前缀,所有文件路径会加上此前缀
+    'prefix' => '',
+    // 目录分隔符,默认为系统常量 DIRECTORY_SEPARATOR
+    'directory_separator' => '/',
+    // 是否为只读模式(true 时所有写入操作会失败)
+    'read-only' => false,
+    // 写入失败时是否抛出异常(true 时抛出 League\Flysystem\UnableToWriteFile)
+    'throw' => false,
+],
+```
+
+##### 公有云驱动
+
 ```php
 'aliyun' => [
     'type' => 'aliyun',
@@ -96,6 +146,33 @@ try {
 } catch (\think\exception\ValidateException $e) {
     echo $e->getMessage();
 }
+```
+
+##### Local 驱动使用示例
+
+```php
+use hulang\filesystem\facade\Filesystem;
+
+// 使用默认的 local 磁盘
+Filesystem::disk('local')->put('example.txt', 'Hello, think-filesystem!');
+echo Filesystem::disk('local')->get('example.txt');
+
+// 使用 public 磁盘(需要在配置中定义)
+$path = Filesystem::disk('public')->putFile('images', $file);
+// 获取文件的可访问 URL
+$url = Filesystem::disk('public')->url($path); // /storage/images/xxx.jpg
+
+// 获取文件的绝对路径
+$absolutePath = Filesystem::disk('local')->path('example.txt');
+
+// 设置文件可见性
+Filesystem::disk('public')->setVisibility('secret.txt', 'private');
+echo Filesystem::disk('public')->getVisibility('secret.txt'); // private
+
+// 目录操作
+Filesystem::disk('local')->makeDirectory('docs');
+$files = Filesystem::disk('local')->files('docs');
+$dirs = Filesystem::disk('local')->directories('docs');
 ```
 
 #### 检索文件
