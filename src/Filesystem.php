@@ -29,7 +29,7 @@ class Filesystem extends Manager
      * @param null|string $name 可选参数,指定要获取的磁盘驱动的名称如果未提供,则返回默认驱动
      * @return Driver 返回请求的磁盘驱动实例
      */
-    public function disk(string $name = null): Driver
+    public function disk(?string $name = null): Driver
     {
         return $this->driver($name);
     }
@@ -43,7 +43,7 @@ class Filesystem extends Manager
      * @param null|string $name 可选参数,用于指定云存储服务的名称如果未提供,则使用默认云存储服务
      * @return Driver 返回 Driver 接口的实现实例,具体类型取决于所指定或默认的云存储服务
      */
-    public function cloud(string $name = null): Driver
+    public function cloud(?string $name = null): Driver
     {
         return $this->driver($name);
     }

@@ -37,10 +37,6 @@ use voku\helper\ASCII;
  */
 abstract class Driver
 {
-
-    /** @var Cache */
-    protected $cache;
-
     /** @var Filesystem */
     protected $filesystem;
 
@@ -59,54 +55,128 @@ abstract class Driver
      */
     protected $config = [];
 
-    public function __construct(Cache $cache, array $config)
+    /**
+     * Driver 构造函数。
+     *
+     * $cache 参数保留以维持向后兼容，当前实现中并不实际使用，
+     * 仅在构造期间可选地接受一个 think\Cache 实例。
+     *
+     * @param Cache|null $cache 可选的缓存实例（保留向后兼容）
+     * @param array $config 配置数组
+     */
+    public function __construct(?Cache $cache = null, array $config = [])
     {
-        $this->cache = $cache;
         $this->config = array_merge($this->config, $config);
 
-        $separator = $config['directory_separator'] ?? DIRECTORY_SEPARATOR;
-        $this->prefixer = new PathPrefixer($config['root'] ?? '', $separator);
+        $separator = $this->config['directory_separator'] ?? DIRECTORY_SEPARATOR;
+        $root = $this->config['root'] ?? '';
 
-        if (isset($config['prefix'])) {
-            $this->prefixer = new PathPrefixer($this->prefixer->prefixPath($config['prefix']), $separator);
+        if (isset($this->config['prefix'])) {
+            $root = rtrim($root, '\\/') . $separator . ltrim($this->config['prefix'], '\\/');
         }
 
-        $this->adapter = $this->createAdapter();
-        $this->filesystem = $this->createFilesystem($this->adapter, $this->config);
+        $this->prefixer = new PathPrefixer($root, $separator);
+
+        // 对适配器进行只读包装，并且把包装后的适配器回写，
+        // 这样 getAdapter() / url() 拿到的都是实际生效的那一层。
+        $this->adapter = $this->wrapAdapter($this->createAdapter());
+        $this->filesystem = new Filesystem($this->adapter, $this->extractFilesystemOptions($this->config));
     }
 
     abstract protected function createAdapter(): FilesystemAdapter;
 
     /**
-     * 根据配置创建Filesystem实例
-     * 
-     * 此方法主要用于根据传入的适配器和配置数组创建一个合适的Filesystem实例
-     * 它允许将文件系统设置为只读,或者为路径添加前缀,并根据配置数组的特定参数配置Filesystem实例
-     * 
-     * @param FilesystemAdapter $adapter 文件系统适配器,用于与文件系统交互
-     * @param array $config 配置数组,包含文件系统的配置信息,如读取模式和路径前缀等
-     * @return Filesystem 返回配置好的Filesystem实例
+     * 根据配置对原始适配器进行包装（目前仅支持 read-only）
+     *
+     * PathPrefixedAdapter 不再在此处应用：因为 prefixer 已经把 prefix
+     * 合并到了 root 里，驱动内部看到的路径已经是带前缀的完整路径，
+     * 再通过 PathPrefixedAdapter 叠加会造成前缀重复。
+     *
+     * @param FilesystemAdapter $adapter 原始文件系统适配器
+     * @return FilesystemAdapter 包装后的适配器
      */
-    protected function createFilesystem(FilesystemAdapter $adapter, array $config): Filesystem
+    protected function wrapAdapter(FilesystemAdapter $adapter): FilesystemAdapter
     {
-        // 如果配置中设置为只读，创建并使用只读文件系统适配器包装原始适配器
-        if (($config['read-only'] ?? false) === true) {
+        if (($this->config['read-only'] ?? false) === true) {
             $adapter = new ReadOnlyFilesystemAdapter($adapter);
         }
 
-        // 如果配置中设置了前缀，创建并使用路径前缀适配器包装原始适配器
-        if (!empty($config['prefix'])) {
-            $adapter = new PathPrefixedAdapter($adapter, $config['prefix']);
-        }
+        return $adapter;
+    }
 
-        // 返回新的 Filesystem 实例，使用配置好的适配器和部分配置参数
-        return new Filesystem($adapter, Arr::only($config, [
+    /**
+     * 从完整配置中提取 Flysystem Filesystem 使用的选项
+     *
+     * @param array $config 配置数组
+     * @return array 适用于 Filesystem 构造的选项数组
+     */
+    protected function extractFilesystemOptions(array $config): array
+    {
+        return Arr::only($config, [
             'directory_visibility',
             'disable_asserts',
             'temporary_url',
             'url',
             'visibility',
-        ]));
+        ]);
+    }
+
+    /**
+     * 递归解包被 PathPrefixedAdapter / ReadOnlyFilesystemAdapter 等包装的适配器，
+     * 以便获取底层具体适配器的能力（如 getUrl）。
+     *
+     * @param FilesystemAdapter $adapter
+     * @return FilesystemAdapter
+     */
+    protected function unwrapAdapter(FilesystemAdapter $adapter): FilesystemAdapter
+    {
+        $unwrapped = $adapter;
+
+        while (true) {
+            if ($unwrapped instanceof PathPrefixedAdapter) {
+                $inner = $this->readAdapterInner($unwrapped, 'innerAdapter');
+                if ($inner instanceof FilesystemAdapter) {
+                    $unwrapped = $inner;
+                    continue;
+                }
+                break;
+            }
+
+            if ($unwrapped instanceof ReadOnlyFilesystemAdapter) {
+                $inner = $this->readAdapterInner($unwrapped, 'adapter');
+                if ($inner instanceof FilesystemAdapter) {
+                    $unwrapped = $inner;
+                    continue;
+                }
+                break;
+            }
+
+            break;
+        }
+
+        return $unwrapped;
+    }
+
+    /**
+     * 通过反射读取适配器对象的私有/受保护属性。
+     *
+     * @param object $object
+     * @param string $property
+     * @return mixed
+     */
+    private function readAdapterInner(object $object, string $property): mixed
+    {
+        try {
+            $reflection = new \ReflectionObject($object);
+            if (!$reflection->hasProperty($property)) {
+                return null;
+            }
+            $prop = $reflection->getProperty($property);
+            $prop->setAccessible(true);
+            return $prop->getValue($object);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -236,11 +306,18 @@ abstract class Driver
         $response = new StreamedResponse;
 
         if (!array_key_exists('Content-Type', $headers)) {
-            $headers['Content-Type'] = $this->mimeType($path);
+            $mimeType = $this->mimeType($path);
+            $headers['Content-Type'] = is_string($mimeType) && $mimeType !== ''
+                ? $mimeType
+                : 'application/octet-stream';
         }
 
         if (!array_key_exists('Content-Length', $headers)) {
-            $headers['Content-Length'] = $this->size($path);
+            try {
+                $headers['Content-Length'] = $this->size($path);
+            } catch (FilesystemException $e) {
+                throw_if($this->throwsExceptions(), $e);
+            }
         }
 
         if (!array_key_exists('Content-Disposition', $headers)) {
@@ -532,13 +609,16 @@ abstract class Driver
     /**
      * 根据指定路径获取资源的 URL
      *
+     * 如果适配器被 ReadOnlyFilesystemAdapter 等包装，会先尝试解包到底层适配器，
+     * 以便正确调用 getUrl() 或识别为 LocalFilesystemAdapter。
+     *
      * @param string $path 资源路径
      * @return string 资源的 URL
      * @throws \RuntimeException 如果无法获取 URL
      */
     public function url(string $path): string
     {
-        $adapter = $this->adapter;
+        $adapter = $this->unwrapAdapter($this->adapter);
 
         if (method_exists($adapter, 'getUrl')) {
             return $adapter->getUrl($path);
@@ -549,40 +629,6 @@ abstract class Driver
         }
 
         throw new \RuntimeException('This driver does not support retrieving URLs.');
-    }
-
-    /**
-     * 替换基础 URL
-     *
-     * 解析给定的 URL 并替换 URI 对象的基础 URL 部分
-     * 保留原始 URI 的路径和查询参数,仅替换协议、主机和端口
-     *
-     * @param object $uri URI 对象
-     * @param string $url 新的基础 URL
-     * @return object 返回一个新的 URI 对象,基础 URL 部分已被替换
-     */
-    protected function replaceBaseUrl(object $uri, string $url): object
-    {
-        $parsed = parse_url($url);
-        if ($parsed === false) {
-            return $uri;
-        }
-
-        if (isset($parsed['scheme'])) {
-            $uri = $uri->withScheme($parsed['scheme']);
-        }
-        if (isset($parsed['host'])) {
-            $uri = $uri->withHost($parsed['host']);
-        }
-        if (array_key_exists('port', $parsed)) {
-            $uri = $uri->withPort($parsed['port']);
-        } else {
-            if (method_exists($uri, 'withPort')) {
-                $uri = $uri->withPort(null);
-            }
-        }
-
-        return $uri;
     }
 
     /**
@@ -614,9 +660,10 @@ abstract class Driver
      * 
      * @param string $path 路径 保存文件的目录路径
      * @param File|string $file 文件 要保存的文件,可以是一个文件路径字符串或File对象
-     * @param null|string|\Closure $rule 文件名规则 文件名的生成规则,可为空,默认为文件的哈希值
+     * @param string|\Closure|null|array $rule 文件名规则 可为字符串、闭包或 null;
+     *                                          当传入数组时会被当作 $options 使用(使用默认哈希文件名)
      * @param array $options 参数 额外的保存选项,例如存储类型或权限设置
-     * @return mixed|bool|string 返回保存文件的结果,成功时返回文件名,失败时返回false
+     * @return string|false 返回保存文件的结果,成功时返回文件名,失败时返回false
      */
     public function putFile(string $path, File|string $file, mixed $rule = null, array $options = []): string|false
     {
@@ -628,7 +675,8 @@ abstract class Driver
             }
         }
         if (is_array($rule)) {
-            return $this->putFileAs($path, $file, $file->hashName(null), $rule);
+            $options = $rule;
+            $rule    = null;
         }
         return $this->putFileAs($path, $file, $file->hashName($rule), $options);
     }
