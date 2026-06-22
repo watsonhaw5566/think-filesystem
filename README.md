@@ -290,3 +290,4 @@ MIT
 3. overtrue/flysystem-qiniu
 4. league/flysystem
 5. overtrue/flysystem-cos
+6. hulang/think-filesystem
