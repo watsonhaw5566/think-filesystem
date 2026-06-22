@@ -7,10 +7,8 @@ namespace hulang\filesystem;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\FilesystemException;
-use League\Flysystem\Ftp\FtpAdapter;
 use League\Flysystem\Local\LocalFilesystemAdapter;
 use League\Flysystem\PathPrefixer;
-use League\Flysystem\PhpseclibV3\SftpAdapter;
 use League\Flysystem\ReadOnly\ReadOnlyFilesystemAdapter;
 use League\Flysystem\PathPrefixing\PathPrefixedAdapter;
 use League\Flysystem\StorageAttributes;
@@ -630,9 +628,8 @@ abstract class Driver
      * 本方法尝试按照以下顺序获取URL
      * 1. 如果适配器对象($adapter)具有getUrl方法,则调用该方法
      * 2. 如果文件系统对象($filesystem)具有getUrl方法,则调用该方法
-     * 3. 如果适配器是SftpAdapter或FtpAdapter的实例,则调用内部的getFtpUrl方法
-     * 4. 如果适配器是LocalFilesystemAdapter的实例,则调用内部的getLocalUrl方法
-     * 5. 如果本类具有getUrl方法,则调用该方法
+     * 3. 如果适配器是LocalFilesystemAdapter的实例,则调用内部的getLocalUrl方法
+     * 4. 如果本类具有getUrl方法,则调用该方法
      * 如果以上所有尝试均失败,则抛出RuntimeException
      *
      * @param string $path 资源路径
@@ -647,8 +644,6 @@ abstract class Driver
             return $adapter->getUrl($path);
         } elseif (method_exists($this->filesystem, 'getUrl')) {
             return $this->filesystem->getUrl($path);
-        } elseif ($adapter instanceof SftpAdapter || $adapter instanceof FtpAdapter) {
-            return $this->getFtpUrl($path);
         } elseif ($adapter instanceof LocalFilesystemAdapter) {
             return $this->getLocalUrl($path);
         } elseif (method_exists($this, 'getUrl')) {
@@ -656,26 +651,6 @@ abstract class Driver
         } else {
             throw new \RuntimeException('This driver does not support retrieving URLs.');
         }
-    }
-
-    /**
-     * 获取FTP操作的URL
-     * 
-     * 该方法用于根据给定的路径和配置中的URL拼接出FTP操作的完整URL如果配置中没有指定URL,则直接返回给定的路径
-     *
-     * @param string $path FTP操作的路径
-     * @return mixed|string FTP操作的完整URL或者给定的路径
-     */
-    protected function getFtpUrl($path)
-    {
-        // 初始化结果为给定的路径
-        $result = $path;
-        // 检查配置中是否设置了URL,如果设置了,则使用拼接方法将URL和路径拼接起来
-        if (isset($this->config['url'])) {
-            $result = $this->concatPathToUrl($this->config['url'], $path);
-        }
-        // 返回最终的URL
-        return $result;
     }
 
     /**
@@ -718,7 +693,7 @@ abstract class Driver
      * 获取当前实例所使用的文件系统适配器
      *
      * 该方法返回一个 \League\Flysystem\FilesystemAdapter 实例,该实例封装了实际进行文件操作的核心逻辑
-     * 通过这个适配器,可以进行文件的读写、删除、复制等操作,而不需要关心这些操作是在本地文件系统、Amazon S3或是其他存储系统上执行
+     * 通过这个适配器,可以进行文件的读写、删除、复制等操作,而不需要关心这些操作是在本地文件系统、或是其他云存储系统上执行
      *
      * @return \League\Flysystem\FilesystemAdapter 返回文件系统适配器实例
      */
