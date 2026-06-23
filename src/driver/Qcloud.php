@@ -18,6 +18,17 @@ class Qcloud extends Driver
      */
     protected function createAdapter(): CosAdapter
     {
+        $appId     = $this->config['app_id'] ?? null;
+        $secretId  = $this->config['secret_id'] ?? null;
+        $secretKey = $this->config['secret_key'] ?? null;
+        $bucket    = $this->config['bucket'] ?? null;
+
+        if ($appId === null || $secretId === null || $secretKey === null || $bucket === null) {
+            throw new \InvalidArgumentException(
+                'Qcloud driver requires app_id, secret_id, secret_key and bucket in the config.'
+            );
+        }
+
         return new CosAdapter($this->config);
     }
 }
