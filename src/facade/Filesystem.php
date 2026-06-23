@@ -19,7 +19,7 @@ use watsonhaw\filesystem\Driver;
  */
 class Filesystem extends Facade
 {
-    protected static function getFacadeClass()
+    protected static function getFacadeClass(): string
     {
         return 'filesystem';
     }
