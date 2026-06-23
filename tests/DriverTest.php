@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace watsonhaw\filesystem\tests;
 
-use GuzzleHttp\Psr7\Utils;
 use watsonhaw\filesystem\Driver;
 use watsonhaw\filesystem\driver\Local;
 use League\Flysystem\Filesystem as Flysystem;
@@ -69,15 +68,6 @@ class DriverTest extends TestCase
         fclose($tmp);
         $this->assertTrue($result);
         $this->assertSame('resource content', $this->driver->get('from_resource.txt'));
-    }
-
-    public function testPutWithStreamInterface()
-    {
-        $stream = Utils::streamFor('psr7 stream data');
-        // 仅在 guzzlehttp/psr7 可用时测试；否则跳过，通过 StreamInterface 模拟
-        // 注意：项目未引入 guzzlehttp/psr7，这里通过 fopen 加 writeStream 替代该分支
-        // 我们仍保证 writeStream 分支能被覆盖（见 testWriteStream）
-        $this->assertTrue(true);
     }
 
     public function testWriteStream()
