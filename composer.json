@@ -4,7 +4,6 @@
   "type": "library",
   "require": {
     "php": "^8.0",
-    "topthink/framework": "^8.0",
     "topthink/think-helper": "^3.0",
     "symfony/http-foundation": "^6.0",
     "league/flysystem": "^3.0",
@@ -48,6 +47,7 @@
     }
   },
   "require-dev": {
+    "topthink/framework": "^8.0",
     "phpunit/phpunit": "^10.0"
   }
 }
