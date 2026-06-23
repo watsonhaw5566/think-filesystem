@@ -759,7 +759,7 @@ abstract class Driver
                     return false;
                 }
             } else {
-                $this->write($path, $contents, $options);
+                $this->filesystem->write($path, $contents, $options);
             }
         } catch (FilesystemException $e) {
             throw_if($this->throwsExceptions(), $e);
