@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace watsonhaw\filesystem\driver;
 
 use OSS\Core\OssException;
+use OSS\OssClient;
 use watsonhaw\filesystem\Driver;
 use yzh52521\Flysystem\Oss\OssAdapter;
 use InvalidArgumentException;
@@ -45,5 +46,77 @@ class Aliyun extends Driver
                 $e
             );
         }
+    }
+
+    /**
+     * 获取 OSS 临时签名 URL
+     *
+     * 与基类不同，此方法会把 $options['url_params'] 中能被 OSS SDK 签名白名单识别的参数
+     * （例如 x-oss-process、response-content-type 等）传入 signUrl，使其参与签名以避免 403。
+     * 白名单外的参数会在签名后追加到 URL 末尾（使用这些参数需自行承担签名校验失败风险）。
+     *
+     * @param string $path    资源路径
+     * @param int    $expires 过期秒数
+     * @param array  $options 支持 url_params 键追加查询参数
+     * @return string
+     */
+    public function temporaryUrl(string $path, int $expires, array $options = []): string
+    {
+        $adapter = $this->unwrapAdapter($this->adapter);
+
+        if (! $adapter instanceof OssAdapter) {
+            return parent::temporaryUrl($path, $expires, $options);
+        }
+
+        $urlParams = $options['url_params'] ?? [];
+
+        $signOptions  = [];
+        $remainParams = [];
+
+        if (is_array($urlParams)) {
+            // OSS SDK generateQueryString 会处理的参数白名单（用于参与签名）
+            $signedKeys = [
+                OssClient::OSS_PART_NUM,
+                'response-content-type',
+                'response-content-language',
+                'response-cache-control',
+                'response-content-encoding',
+                'response-expires',
+                'response-content-disposition',
+                OssClient::OSS_UPLOAD_ID,
+                OssClient::OSS_COMP,
+                OssClient::OSS_LIVE_CHANNEL_STATUS,
+                OssClient::OSS_LIVE_CHANNEL_START_TIME,
+                OssClient::OSS_LIVE_CHANNEL_END_TIME,
+                OssClient::OSS_PROCESS,
+                OssClient::OSS_POSITION,
+                OssClient::OSS_SYMLINK,
+                OssClient::OSS_RESTORE,
+                OssClient::OSS_TAGGING,
+                OssClient::OSS_WORM_ID,
+                OssClient::OSS_TRAFFIC_LIMIT,
+                OssClient::OSS_VERSION_ID,
+                OssClient::OSS_CONTINUATION_TOKEN,
+                'x-oss-process',
+            ];
+
+            foreach ($urlParams as $key => $value) {
+                if (is_string($key) && in_array($key, $signedKeys, true)) {
+                    $signOptions[$key] = $value;
+                } else {
+                    $remainParams[$key] = $value;
+                }
+            }
+        } else {
+            $remainParams = $urlParams;
+        }
+
+        $signedUrl = (string) $adapter->getTemporaryUrl($path, $expires, $signOptions);
+
+        if (empty($remainParams)) {
+            return $signedUrl;
+        }
+
+        return $this->appendUrlParams($signedUrl, $remainParams);
     }
 }
