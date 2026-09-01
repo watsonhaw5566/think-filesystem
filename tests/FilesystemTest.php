@@ -8,11 +8,12 @@ use watsonhaw\filesystem\Driver;
 use watsonhaw\filesystem\driver\Local;
 use watsonhaw\filesystem\Filesystem;
 use think\App;
+use InvalidArgumentException;
 
 class FilesystemTest extends TestCase
 {
-    private ?string $tmpDir = null;
-    private ?App $app = null;
+    private ?string $tmpDir         = null;
+    private ?App $app               = null;
     private ?Filesystem $filesystem = null;
 
     protected function setUp(): void
@@ -27,15 +28,15 @@ class FilesystemTest extends TestCase
         // 设置配置
         $this->app->config->set([
             'default' => 'local',
-            'disks' => [
-                'local' => [
+            'disks'   => [
+                'local'        => [
                     'type' => 'local',
                     'root' => $this->tmpDir,
                 ],
-                'cloud' => [
+                'cloud'        => [
                     'type' => 'local',
                     'root' => $this->tmpDir . '/cloud',
-                    'url' => 'https://example.com',
+                    'url'  => 'https://example.com',
                 ],
                 'local_custom' => [
                     'type' => 'local',
@@ -99,7 +100,7 @@ class FilesystemTest extends TestCase
 
     public function testGetDiskConfigInvalidDiskThrowsException()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->filesystem->getDiskConfig('does-not-exist');
     }
 
@@ -130,7 +131,7 @@ class FilesystemTest extends TestCase
         });
 
         // 添加一个使用自定义驱动类型的磁盘
-        $currentConfig = $this->filesystem->getConfig();
+        $currentConfig                         = $this->filesystem->getConfig();
         $currentConfig['disks']['custom-disk'] = ['type' => 'custom-type'];
         $this->app->config->set($currentConfig, 'filesystem');
 
@@ -142,8 +143,9 @@ class FilesystemTest extends TestCase
 
     private function extractRootFromDriver($driver): string
     {
-        $prop = $this->getPrivateProperty(Driver::class, 'config');
+        $prop   = $this->getPrivateProperty(Driver::class, 'config');
         $config = $prop->getValue($driver);
+
         return $config['root'];
     }
 
@@ -159,10 +161,11 @@ class FilesystemTest extends TestCase
         $called = false;
         $this->filesystem->extend('my-driver', function () use (&$called) {
             $called = true;
+
             return $this->createLocalDriver();
         });
 
-        $currentConfig = $this->filesystem->getConfig();
+        $currentConfig                     = $this->filesystem->getConfig();
         $currentConfig['disks']['my-disk'] = ['type' => 'my-driver'];
         $this->app->config->set($currentConfig, 'filesystem');
 

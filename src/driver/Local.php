@@ -32,7 +32,7 @@ class Local extends Driver
         // 根据配置中的权限和可见性设置,转换为便携式可见性对象
         $visibility = PortableVisibilityConverter::fromArray(
             $this->config['permissions'] ?? [],
-            $this->config['visibility'] ?? Visibility::PRIVATE
+            $this->config['visibility']  ?? Visibility::PRIVATE
         );
 
         // 确定符号链接的处理方式：跳过或禁止

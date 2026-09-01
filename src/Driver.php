@@ -29,6 +29,10 @@ use think\File;
 use think\file\UploadedFile;
 use think\helper\Arr;
 use voku\helper\ASCII;
+use Closure;
+use ReflectionObject;
+use RuntimeException;
+use Throwable;
 
 /**
  * Class Driver
@@ -69,7 +73,7 @@ abstract class Driver
         $this->config = array_merge($this->config, $config);
 
         $separator = $this->config['directory_separator'] ?? DIRECTORY_SEPARATOR;
-        $root = $this->config['root'] ?? '';
+        $root      = $this->config['root']                     ?? '';
 
         if (isset($this->config['prefix'])) {
             $root = rtrim($root, '\\/') . $separator . ltrim($this->config['prefix'], '\\/');
@@ -82,7 +86,7 @@ abstract class Driver
 
         // 对适配器进行只读包装，并且把包装后的适配器回写，
         // 这样 getAdapter() / url() 拿到的都是实际生效的那一层。
-        $this->adapter = $this->wrapAdapter($this->createAdapter());
+        $this->adapter    = $this->wrapAdapter($this->createAdapter());
         $this->filesystem = new Filesystem($this->adapter, $this->extractFilesystemOptions($this->config));
     }
 
@@ -170,25 +174,26 @@ abstract class Driver
     private function readAdapterInner(object $object, string $property): mixed
     {
         try {
-            $reflection = new \ReflectionObject($object);
+            $reflection = new ReflectionObject($object);
             if (!$reflection->hasProperty($property)) {
                 return null;
             }
             $prop = $reflection->getProperty($property);
             $prop->setAccessible(true);
+
             return $prop->getValue($object);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }
 
     /**
      * 获取文件完整路径
-     * 
+     *
      * 该方法接受一个相对路径作为参数,并返回一个完整的文件路径
      * 完整路径是通过前缀路径服务(prefixer)和提供的相对路径拼接而成
      * 此方法用于将应用程序中的相对文件路径转换为可用于文件操作的绝对路径
-     * 
+     *
      * @param string $path 相对路径字符串,表示相对于某个基础路径的文件或目录位置
      * @return mixed|string 返回拼接前缀后的完整文件路径字符串
      */
@@ -199,12 +204,12 @@ abstract class Driver
 
     /**
      * 将给定的路径拼接到URL末尾
-     * 
+     *
      * 该方法用于生成正确的URL格式,确保URL和路径可以完美拼接,不会出现多余的斜杠
-     * 
+     *
      * @param string $url 基础URL,例如 "http://example.com"
      * @param string $path 要拼接的路径,例如 "resource"
-     * 
+     *
      * @return mixed|string 拼接后的完整URL
      */
     protected function concatPathToUrl(string $url, string $path): string
@@ -292,6 +297,7 @@ abstract class Driver
         } catch (UnableToReadFile $e) {
             throw_if($this->throwsExceptions(), $e);
         }
+
         return null;
     }
 
@@ -306,10 +312,10 @@ abstract class Driver
      */
     public function response(string $path, ?string $name = null, array $headers = [], string $disposition = 'inline'): StreamedResponse
     {
-        $response = new StreamedResponse;
+        $response = new StreamedResponse();
 
         if (!array_key_exists('Content-Type', $headers)) {
-            $mimeType = $this->mimeType($path);
+            $mimeType                = $this->mimeType($path);
             $headers['Content-Type'] = is_string($mimeType) && $mimeType !== ''
                 ? $mimeType
                 : 'application/octet-stream';
@@ -392,6 +398,7 @@ abstract class Driver
         if ($this->filesystem->visibility($path) === Visibility::PUBLIC) {
             return 'public';
         }
+
         // 否则，返回 'private'
         return 'private';
     }
@@ -412,8 +419,10 @@ abstract class Driver
             $this->filesystem->setVisibility($path, $visibility);
         } catch (UnableToSetVisibility $e) {
             throw_if($this->throwsExceptions(), $e);
+
             return false;
         }
+
         return true;
     }
 
@@ -430,6 +439,7 @@ abstract class Driver
         if ($this->fileExists($path)) {
             return $this->put($path, $data . $separator . $this->get($path));
         }
+
         return $this->put($path, $data);
     }
 
@@ -446,6 +456,7 @@ abstract class Driver
         if ($this->fileExists($path)) {
             return $this->put($path, $this->get($path) . $separator . $data);
         }
+
         return $this->put($path, $data);
     }
 
@@ -457,7 +468,7 @@ abstract class Driver
      */
     public function delete(string|array $paths): bool
     {
-        $paths = is_array($paths) ? $paths : func_get_args();
+        $paths   = is_array($paths) ? $paths : func_get_args();
         $success = true;
 
         foreach ($paths as $path) {
@@ -468,6 +479,7 @@ abstract class Driver
                 $success = false;
             }
         }
+
         return $success;
     }
 
@@ -484,8 +496,10 @@ abstract class Driver
             $this->filesystem->copy($from, $to);
         } catch (UnableToCopyFile $e) {
             throw_if($this->throwsExceptions(), $e);
+
             return false;
         }
+
         return true;
     }
 
@@ -502,8 +516,10 @@ abstract class Driver
             $this->filesystem->move($from, $to);
         } catch (UnableToMoveFile $e) {
             throw_if($this->throwsExceptions(), $e);
+
             return false;
         }
+
         return true;
     }
 
@@ -536,6 +552,7 @@ abstract class Driver
         } catch (UnableToRetrieveMetadata $e) {
             throw_if($this->throwsExceptions(), $e);
         }
+
         return false;
     }
 
@@ -564,6 +581,7 @@ abstract class Driver
         } catch (UnableToReadFile $e) {
             throw_if($this->throwsExceptions(), $e);
         }
+
         return null;
     }
 
@@ -583,22 +601,24 @@ abstract class Driver
             $this->filesystem->writeStream($path, $resource, $options);
         } catch (UnableToWriteFile | UnableToSetVisibility $e) {
             throw_if($this->throwsExceptions(), $e);
+
             return false;
         }
+
         return true;
     }
 
     /**
      * 获取本地URL
-     * 
+     *
      * 此方法用于根据配置中的URL和给定的路径生成完整的URL
      * 如果配置中没有指定URL,则返回原始路径
      * 主要用于根据当前的配置信息,结合外部给定的路径,生成访问资源所需的完整URL这对于在有统一配置的情况下,
      * 根据路径动态生成访问地址非常有用如果配置中已经提供了URL,那么会将该URL与给定的路径拼接起来;否则,
      * 将直接返回给定的路径
-     * 
+     *
      * @param string $path 要拼接到URL的路径这部分路径将被加到配置中给出的基础URL之后
-     * 
+     *
      * @return mixed|string 完整的URL如果配置中没有提供URL,则返回原始路径
      */
     protected function getLocalUrl(string $path): string
@@ -606,6 +626,7 @@ abstract class Driver
         if (isset($this->config['url'])) {
             return $this->concatPathToUrl($this->config['url'], $path);
         }
+
         return $path;
     }
 
@@ -617,7 +638,7 @@ abstract class Driver
      *
      * @param string $path 资源路径
      * @return string 资源的 URL
-     * @throws \RuntimeException 如果无法获取 URL
+     * @throws RuntimeException 如果无法获取 URL
      */
     public function url(string $path): string
     {
@@ -631,7 +652,7 @@ abstract class Driver
             return $this->getLocalUrl($path);
         }
 
-        throw new \RuntimeException('This driver does not support retrieving URLs.');
+        throw new RuntimeException('This driver does not support retrieving URLs.');
     }
 
     /**
@@ -656,14 +677,14 @@ abstract class Driver
 
     /**
      * 保存文件
-     * 
+     *
      * 此方法用于将文件保存到指定的路径
      * 它支持自定义文件名规则和传递额外的选项
      * 文件名规则可以是一个字符串、null、或者一个Closure对象,用于动态生成文件名
-     * 
+     *
      * @param string $path 路径 保存文件的目录路径
      * @param File|string $file 文件 要保存的文件,可以是一个文件路径字符串或File对象
-     * @param string|\Closure|null|array $rule 文件名规则 可为字符串、闭包或 null;
+     * @param string|Closure|null|array $rule 文件名规则 可为字符串、闭包或 null;
      *                                          当传入数组时会被当作 $options 使用(使用默认哈希文件名)
      * @param array $options 参数 额外的保存选项,例如存储类型或权限设置
      * @return string|false 返回保存文件的结果,成功时返回文件名,失败时返回false
@@ -673,7 +694,7 @@ abstract class Driver
         if (is_string($file)) {
             try {
                 $file = new File($file);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 return false;
             }
         }
@@ -681,6 +702,7 @@ abstract class Driver
             $options = $rule;
             $rule    = null;
         }
+
         return $this->putFileAs($path, $file, $file->hashName($rule), $options);
     }
 
@@ -739,6 +761,7 @@ abstract class Driver
             if ($stream === false) {
                 return false;
             }
+
             try {
                 return $this->writeStream($path, $stream, $options);
             } finally {
@@ -751,6 +774,7 @@ abstract class Driver
         try {
             if ($contents instanceof StreamInterface) {
                 $this->writeStream($path, $contents->detach(), $options);
+
                 return true;
             }
 
@@ -763,18 +787,20 @@ abstract class Driver
             }
         } catch (FilesystemException $e) {
             throw_if($this->throwsExceptions(), $e);
+
             return false;
         }
+
         return true;
     }
 
     /**
      * 获取指定目录中的所有文件列表
-     * 
+     *
      * 该方法使用递归方式获取目录中的文件
      * 如果指定了目录,则返回该目录及其子目录中的所有文件;如果未指定目录,则返回根目录及其子目录中的所有文件
      * 返回的列表按路径排序
-     * 
+     *
      * @param string|null $directory 可选参数,指定要获取文件的目录路径.如果未提供,将从根目录开始
      * @param bool $recursive 指定是否递归获取目录中的文件,默认为 false,即不递归
      * @return mixed|array 返回包含所有文件路径的数组
@@ -845,8 +871,10 @@ abstract class Driver
             $this->filesystem->createDirectory($path);
         } catch (UnableToCreateDirectory | UnableToSetVisibility $e) {
             throw_if($this->throwsExceptions(), $e);
+
             return false;
         }
+
         return true;
     }
 
@@ -866,8 +894,10 @@ abstract class Driver
             $this->filesystem->deleteDirectory($directory);
         } catch (UnableToDeleteDirectory $e) {
             throw_if($this->throwsExceptions(), $e);
+
             return false;
         }
+
         return true;
     }
 

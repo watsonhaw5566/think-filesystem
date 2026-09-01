@@ -7,6 +7,8 @@ namespace watsonhaw\filesystem\driver;
 use OSS\Core\OssException;
 use watsonhaw\filesystem\Driver;
 use yzh52521\Flysystem\Oss\OssAdapter;
+use InvalidArgumentException;
+use RuntimeException;
 
 class Aliyun extends Driver
 {
@@ -23,13 +25,13 @@ class Aliyun extends Driver
      */
     protected function createAdapter(): OssAdapter
     {
-        $accessId     = $this->config['access_id'] ?? null;
+        $accessId     = $this->config['access_id']     ?? null;
         $accessSecret = $this->config['access_secret'] ?? null;
-        $bucket       = $this->config['bucket'] ?? null;
-        $isCName      = $this->config['isCName'] ?? null;
+        $bucket       = $this->config['bucket']        ?? null;
+        $isCName      = $this->config['isCName']       ?? null;
 
         if ($accessId === null || $accessSecret === null || $bucket === null || $isCName === null) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Aliyun driver requires access_id, access_secret, bucket and isCName in the config.'
             );
         }
@@ -37,7 +39,7 @@ class Aliyun extends Driver
         try {
             return new OssAdapter($this->config);
         } catch (OssException $e) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf('Aliyun driver failed to initialize OssClient: %s', $e->getMessage()),
                 0,
                 $e

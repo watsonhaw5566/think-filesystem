@@ -6,8 +6,8 @@ namespace watsonhaw\filesystem;
 
 use InvalidArgumentException;
 use think\helper\Arr;
-use think\helper\Str;
 use think\Manager;
+use Closure;
 
 class Filesystem extends Manager
 {
@@ -22,10 +22,10 @@ class Filesystem extends Manager
 
     /**
      * 获取指定名称的磁盘驱动实例
-     * 
+     *
      * 本方法主要用于通过磁盘名称获取对应的驱动实例如果未指定名称,则返回默认驱动实例
      * 这对于需要对文件进行操作,而又不关心具体磁盘类型(本地、远程等)的场景非常有用
-     * 
+     *
      * @param null|string $name 可选参数,指定要获取的磁盘驱动的名称如果未提供,则返回默认驱动
      * @return Driver 返回请求的磁盘驱动实例
      */
@@ -36,10 +36,10 @@ class Filesystem extends Manager
 
     /**
      * 获取名为 $name 的云存储驱动实例
-     * 
+     *
      * 本方法主要提供了一个便捷方式来获取云存储驱动实例,避免了直接调用底层的 driver 方法
      * 它允许开发者通过可选的 $name 参数指定所需的云存储服务,从而返回对应的驱动实例
-     * 
+     *
      * @param null|string $name 可选参数,用于指定云存储服务的名称如果未提供,则使用默认云存储服务
      * @return Driver 返回 Driver 接口的实现实例,具体类型取决于所指定或默认的云存储服务
      */
@@ -87,15 +87,16 @@ class Filesystem extends Manager
     protected function resolveConfig(string $name): array
     {
         $config = $this->getDiskConfig($name);
+
         return is_array($config) ? $config : [];
     }
 
     /**
      * 创建指定名称的驱动实例
-     * 
+     *
      * 本方法首先解析给定的驱动名称,确定所需的驱动类型如果存在自定义驱动创建器,则调用自定义创建器
      * 否则,尝试调用内部的创建方法如果内部方法不存在,则解析驱动类并使用应用实例化该类
-     * 
+     *
      * @param string $name 驱动名称
      * @return mixed 驱动实例
      */
@@ -133,6 +134,7 @@ class Filesystem extends Manager
         if (!is_null($name)) {
             return $this->app->config->get('filesystem.' . $name, $default);
         }
+
         return $this->app->config->get('filesystem');
     }
 
@@ -156,6 +158,7 @@ class Filesystem extends Manager
             // 使用 Arr::get 方法获取配置项的值,如果配置项不存在,则返回默认值
             return Arr::get($config, $name, $default);
         }
+
         // 如果未找到磁盘配置,抛出异常
         throw new InvalidArgumentException("Disk [$disk] not found.");
     }
@@ -180,12 +183,13 @@ class Filesystem extends Manager
      * 该方法允许通过回调函数扩展服务容器中特定驱动程序的创建逻辑,为服务容器的驱动程序创建提供额外的自定义选项
      *
      * @param string $driver 驱动程序的名称
-     * @param \Closure $callback 回调函数用于创建驱动程序
+     * @param Closure $callback 回调函数用于创建驱动程序
      * @return $this 返回服务容器实例,支持链式调用
      */
-    public function extend(string $driver, \Closure $callback): static
+    public function extend(string $driver, Closure $callback): static
     {
         $this->customCreators[$driver] = $callback;
+
         return $this;
     }
 
