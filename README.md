@@ -1,6 +1,6 @@
 <h2><p align="center">think-filesystem</p></h2>
 <p align="center">thinkphp 8.0.0+ 的文件系统扩展包</p>
-<p align="center">支持本地文件系统、阿里云OSS、七牛云、腾讯云COS、华为云OBS</p>
+<p align="center">支持本地文件系统、阿里云OSS、腾讯云COS</p>
 
 #### 环境
 
@@ -11,9 +11,7 @@
 
 1. 本地（Local）
 2. 阿里云 OSS
-3. 七牛云
-4. 腾讯云 COS
-5. 华为云 OBS
+3. 腾讯云 COS
 
 #### 安装
 
@@ -78,13 +76,6 @@ return [
                 'bucket_endpoint' => '',
             ],
         ],
-        'qiniu' => [
-            'type' => 'qiniu',
-            'access_key' => '******',
-            'secret_key' => '******',
-            'bucket' => 'bucket',
-            'domain' => 'https://youcdn.domain.com',
-        ],
         'qcloud' => [
             'type' => 'qcloud',
             'region' => '***', //bucket 所属区域 英文
@@ -97,15 +88,6 @@ return [
             'cdn' => '您的 CDN 域名',
             'scheme' => 'https',
             'read_from_cdn' => false,
-        ],
-        'obs' => [
-            'type' => 'obs',
-            'key' => env('OBS_KEY'),
-            'secret' => env('OBS_SECRET'),
-            'bucket' => env('OBS_BUCKET'),
-            'endpoint' => env('OBS_ENDPOINT'),
-            'is_cname' => env('OBS_IS_CNAME', false),
-            'security_token' => env('OBS_SECURITY_TOKEN'),
         ],
         // 更多的磁盘配置信息
     ],
@@ -355,7 +337,6 @@ MIT
 
 1. thinkphp
 2. yuanzhihai/think-filesystem
-3. overtrue/flysystem-qiniu
-4. league/flysystem
-5. overtrue/flysystem-cos
-6. hulang/think-filesystem
+3. league/flysystem
+4. overtrue/flysystem-cos
+5. hulang/think-filesystem
