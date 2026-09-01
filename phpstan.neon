@@ -1,0 +1,10 @@
+parameters:
+    level: 1
+    paths:
+        - src
+        - tests
+    checkExplicitMixed: false
+    ignoreErrors:
+        -
+            message: '#^Constructor of class watsonhaw\\filesystem\\Driver has an unused parameter \$cache\.$#'
+            path: src/Driver.php

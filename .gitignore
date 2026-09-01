@@ -1,4 +1,6 @@
 .idea
 .vscode
 vendor
-.phpunit.cache
+
+# 缓存
+.phpunit.result.cache
