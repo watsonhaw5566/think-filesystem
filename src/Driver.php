@@ -33,6 +33,7 @@ use Closure;
 use ReflectionObject;
 use RuntimeException;
 use Throwable;
+use DateTimeImmutable;
 
 /**
  * Class Driver
@@ -636,23 +637,129 @@ abstract class Driver
      * 如果适配器被 ReadOnlyFilesystemAdapter 等包装，会先尝试解包到底层适配器，
      * 以便正确调用 getUrl() 或识别为 LocalFilesystemAdapter。
      *
-     * @param string $path 资源路径
+     * 通过 $options['url_params'] 可以追加自定义 URL 查询参数（常用于云存储图片处理接口）：
+     *   // OSS 示例
+     *   Filesystem::disk('oss')->url('a.jpg', [
+     *       'url_params' => ['x-oss-process' => 'image/resize,w_200,h_200'],
+     *   ]);
+     *   // COS 示例
+     *   Filesystem::disk('cos')->url('a.jpg', [
+     *       'url_params' => ['imageMogr2/thumbnail/200x200!/format/webp' => ''],
+     *   ]);
+     *   // 也支持直接传字符串
+     *   Filesystem::disk('oss')->url('a.jpg', [
+     *       'url_params' => 'x-oss-process=image/resize,w_200',
+     *   ]);
+     *
+     * @param string $path    资源路径
+     * @param array  $options 可选选项，支持 url_params 键追加查询参数
      * @return string 资源的 URL
      * @throws RuntimeException 如果无法获取 URL
      */
-    public function url(string $path): string
+    public function url(string $path, array $options = []): string
     {
         $adapter = $this->unwrapAdapter($this->adapter);
 
         if (method_exists($adapter, 'getUrl')) {
-            return $adapter->getUrl($path);
+            $url = $adapter->getUrl($path);
+        } elseif ($adapter instanceof LocalFilesystemAdapter) {
+            $url = $this->getLocalUrl($path);
+        } else {
+            throw new RuntimeException('This driver does not support retrieving URLs.');
         }
 
-        if ($adapter instanceof LocalFilesystemAdapter) {
-            return $this->getLocalUrl($path);
+        return $this->appendUrlParams($url, $options['url_params'] ?? []);
+    }
+
+    /**
+     * 获取带签名的临时访问 URL（私有 Bucket 场景）
+     *
+     * 云存储驱动通常会重写此方法以支持 url_params 同时参与签名，
+     * 避免签名后追加图片处理等参数导致的权限校验失败。
+     *
+     * @param string $path    资源路径
+     * @param int    $expires 过期时间，单位秒（从当前时间起算）
+     * @param array  $options 可选选项，支持 url_params 键追加查询参数
+     * @return string 带签名的临时 URL
+     * @throws RuntimeException 如果驱动不支持临时 URL
+     */
+    public function temporaryUrl(string $path, int $expires, array $options = []): string
+    {
+        $adapter = $this->unwrapAdapter($this->adapter);
+
+        $urlParams = $options['url_params'] ?? [];
+
+        // 优先使用适配器具名的临时 URL 方法
+        if (method_exists($adapter, 'getTemporaryUrl')) {
+            $url = (string) $adapter->getTemporaryUrl($path, $expires);
+
+            return $this->appendUrlParams($url, $urlParams);
         }
 
-        throw new RuntimeException('This driver does not support retrieving URLs.');
+        if (method_exists($adapter, 'temporaryUrl')) {
+            $url = (string) $adapter->temporaryUrl(
+                $path,
+                (new DateTimeImmutable())->modify("+{$expires} seconds"),
+                new \League\Flysystem\Config()
+            );
+
+            return $this->appendUrlParams($url, $urlParams);
+        }
+
+        throw new RuntimeException('This driver does not support temporary URLs.');
+    }
+
+    /**
+     * 将 url_params 追加到给定 URL 的查询字符串中。
+     *
+     * 支持以下 $params 形式：
+     *   - 字符串：直接作为原始 query 追加（不含开头的 ?）
+     *   - 数组：键值对形式；值为空字符串时仅追加 key（满足 COS "imageMogr2/..." 此类无值参数）
+     *
+     * @param string               $url    原始 URL
+     * @param string|array<string,mixed> $params 查询参数
+     * @return string 拼接后的 URL
+     */
+    protected function appendUrlParams(string $url, string|array $params): string
+    {
+        if (empty($params)) {
+            return $url;
+        }
+
+        if (is_string($params)) {
+            $query = ltrim($params, '?&');
+            if ($query === '') {
+                return $url;
+            }
+        } else {
+            $segments = [];
+            foreach ($params as $key => $value) {
+                if (is_int($key)) {
+                    // 数字索引：视为用户已手工拼装好的原始 query 片段（不做任何编码）
+                    $raw = ltrim((string) $value, '?&');
+                    if ($raw !== '') {
+                        $segments[] = $raw;
+                    }
+                } elseif ($value === '' || $value === null) {
+                    // 空值：仅追加 key（典型场景：COS 的 ?imageMogr2/thumbnail/200x200! 形式）
+                    // 这里不做 urlencode，避免把路径分隔符"/"转为 %2F 导致云厂商无法识别。
+                    // 如需编码请通过「数字索引」方式传入原始字符串。
+                    $segments[] = (string) $key;
+                } else {
+                    // 标准 key=value 形式：正常 urlencode 保证安全
+                    $segments[] = urlencode((string) $key) . '=' . urlencode((string) $value);
+                }
+            }
+            $query = implode('&', $segments);
+        }
+
+        if ($query === '') {
+            return $url;
+        }
+
+        $separator = str_contains($url, '?') ? '&' : '?';
+
+        return $url . $separator . $query;
     }
 
     /**

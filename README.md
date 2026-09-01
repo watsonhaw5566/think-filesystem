@@ -88,14 +88,12 @@ return [
             'cdn' => '您的 CDN 域名',
             'scheme' => 'https',
             'read_from_cdn' => false,
-        ],
-        // 更多的磁盘配置信息
+        ]
     ],
 ];
 ```
 
-第三步： 开始使用。 请参考thinkphp文档
-文档地址：[https://www.kancloud.cn/manual/thinkphp6_0/1037639 ](https://www.kancloud.cn/manual/thinkphp6_0/1037639 )
+第三步： 开始使用
 
 ##### demo
 
@@ -105,17 +103,18 @@ try {
     validate(
         [
             'image' => [
-                // 限制文件大小(单位b)，这里限制为4M
-                'fileSize' => 10 * 1024 * 1000,
+                // 限制文件大小（单位 byte），这里限制为 4MB
+                'fileSize' => 4 * 1024 * 1024,
                 // 限制文件后缀，多个后缀以英文逗号分割
-                'fileExt'  => 'gif,jpg,png,jpeg'
-            ]
+                'fileExt'  => 'gif,jpg,png,jpeg',
+            ],
         ]
     )->check(['image' => $file]);
 
     $path = \watsonhaw\filesystem\facade\Filesystem::disk('public')->putFile('test', $file);
-    $url = \watsonhaw\filesystem\facade\Filesystem::disk('public')->url($path);
-    return json(['path' => $path, 'url'  => $url]);
+    $url  = \watsonhaw\filesystem\facade\Filesystem::disk('public')->url($path);
+
+    return json(['path' => $path, 'url' => $url]);
 } catch (\think\exception\ValidateException $e) {
     echo $e->getMessage();
 }
@@ -183,10 +182,81 @@ return Filesystem::download('file.jpg', $name, $headers);
 
 #### 文件 URL
 
->你可以使用 url 方法来获取给定文件的 URL。如果你使用的是 local 驱动，这通常只会在给定路径前加上 /storage，并返回一个相对 URL 到文件。如果你使用的是 local 驱动，将返回完全限定的远程 URL：
+>你可以使用 url 方法来获取给定文件的 URL。如果你使用的是 local 驱动，这通常只会在给定路径前加上 /storage，并返回一个相对 URL。如果你使用的是 aliyun / qcloud 这类云驱动，将返回完全限定的远程 URL：
 ```php
 $url = Filesystem::url('file.jpg');
 ```
+
+>通过 `url()` 方法的第二个参数 `$options['url_params']`，可以在生成的 URL 后追加自定义查询参数。这对于阿里云 OSS、腾讯云 COS 等公有云对象存储的「图片处理」「视频截帧」接口非常有用，不需要修改文件本身，直接通过 URL 参数即可实现实时处理：
+
+```php
+use watsonhaw\filesystem\facade\Filesystem;
+
+// ============ 阿里云 OSS 图片处理 ============
+// 文档：https://help.aliyun.com/zh/oss/user-guide/img-parameters
+
+// 方式一：字符串形式，按 OSS 文档拼接好即可
+$thumb = Filesystem::disk('aliyun')->url('images/a.jpg', [
+    'url_params' => 'x-oss-process=image/resize,m_fill,w_200,h_200/format,webp/quality,80',
+]);
+
+// 方式二：key=>value 形式，url_params 会被自动作为 query 追加
+$thumb = Filesystem::disk('aliyun')->url('images/a.jpg', [
+    'url_params' => [
+        'x-oss-process' => 'image/resize,m_fill,w_200,h_200/format,webp',
+    ],
+]);
+
+// ============ 腾讯云 COS 图片处理 ============
+// 文档：https://cloud.tencent.com/document/product/436/44870
+
+// COS 图片处理参数的 key 本身包含斜杠（如 imageMogr2/thumbnail/200x200!），无对应 value
+// 推荐使用「数字索引数组」形式传入原始字符串，框架不会对它做任何编码
+$thumb = Filesystem::disk('qcloud')->url('images/a.jpg', [
+    'url_params' => [
+        'imageMogr2/thumbnail/200x200!/format/webp/quality/80',
+    ],
+]);
+
+// 等价写法：使用空值 key => '' 形式
+$thumb = Filesystem::disk('qcloud')->url('images/a.jpg', [
+    'url_params' => ['imageMogr2/thumbnail/200x200!/format/webp/quality/80' => ''],
+]);
+```
+
+>除了图片处理，任何需要追加到 URL 的查询参数都可以通过 `url_params` 传入，支持以下三种形式：
+>1. **字符串**：原样作为 query 追加（例如 `'a=1&b=2'`）
+>2. **关联数组**：正常的 `key => value`，会做 `urlencode` 后追加
+>3. **数字索引数组**：视为已拼好的原始 query 片段，原样追加不做编码，适合 COS 图片处理这类需要特殊 key 的场景
+
+#### 临时签名 URL
+
+>对于私有读写权限的 Bucket，直接使用 `url()` 生成的 URL 访问会被云厂商返回 403 拒绝。需要使用 `temporaryUrl()` 方法生成**带签名**的临时访问链接，该链接仅在指定的过期时间内有效：
+
+```php
+use watsonhaw\filesystem\facade\Filesystem;
+
+// 生成 1 小时内有效的临时访问 URL
+$url = Filesystem::disk('aliyun')->temporaryUrl('private/report.pdf', 3600);
+
+$url = Filesystem::disk('qcloud')->temporaryUrl('private/report.pdf', 3600);
+```
+
+>`temporaryUrl()` 同样支持 `url_params`，用于图片处理等场景。**重要：本扩展已保证图片处理参数会一并参与签名计算**，避免出现「先签名再追加参数导致签名不匹配、仍然 403」的常见问题：
+
+```php
+// OSS 私有 Bucket：x-oss-process 会自动参与签名，访问时不会 403
+$thumb = Filesystem::disk('aliyun')->temporaryUrl('images/a.jpg', 3600, [
+    'url_params' => ['x-oss-process' => 'image/resize,w_200,h_200/format,webp'],
+]);
+
+// COS 私有 Bucket：imageMogr2 参数会自动参与签名
+$thumb = Filesystem::disk('qcloud')->temporaryUrl('images/a.jpg', 3600, [
+    'url_params' => ['imageMogr2/thumbnail/200x200!/format/webp'],
+]);
+```
+
+> 注：Local 本地驱动不支持临时签名 URL，私有文件请自行实现权限控制。
 
 #### 文件元数据
 >除了读写文件，还可以提供有关文件本身的信息。例如，size 方法可用于获取文件大小（以字节为单位）：
@@ -264,12 +334,22 @@ $path = Filesystem::putFile('photos', new File('/path/to/photo'));
 $path = Filesystem::putFileAs('photos', new File('/path/to/photo'), 'photo.jpg');
 ```
 
->关于 putFile 方法有几点重要的注意事项。注意，我们只指定了目录名称而不是文件名。默认情况下，putFile 方法将生成一个唯一的 ID 作为文件名。文件的扩展名将通过检查文件的 MIME 类型来确定。文件的路径将由 putFile方法返回，因此你可以将路径（包括生成的文件名）存储在数据库中。
-putFile 和 putFileAs 方法还接受一个参数来指定存储文件的「可见性」。如果你将文件存储在云盘（如 Amazon S3）上，并希望文件通过生成的 URL 公开访问，这一点特别有用：
+>关于 putFile 方法有几点重要的注意事项。注意，我们只指定了目录名称而不是文件名。默认情况下，putFile 方法将生成一个唯一的 ID 作为文件名。文件的扩展名将通过检查文件的 MIME 类型来确定。文件的路径将由 putFile 方法返回，因此你可以将路径（包括生成的文件名）存储在数据库中。
+
+>putFile 和 putFileAs 方法还支持通过第 4 个参数 `$options` 传入存储选项（例如可见性、SDK 写参数等）。如果你希望上传到云盘的文件默认公开访问，可以传入 `visibility => public`：
 
 ```php
-Filesystem::putFile('photos', new File('/path/to/photo'), 'public');
+use think\File;
+
+// putFile 参数顺序：目录, 上传文件, 文件名规则(null=自动生成唯一ID), 选项数组
+$path = Filesystem::putFile(
+    'photos',
+    new File('/path/to/photo'),
+    null,
+    ['visibility' => 'public']
+);
 ```
+
 #### 删除文件
 >delete 方法接收一个文件名或一个文件名数组来将其从磁盘中删除：
 ```php
@@ -279,7 +359,7 @@ Filesystem::delete(['file.jpg', 'file2.jpg']);
 ```
 如果需要，你可以指定应从哪个磁盘删除文件。
 ```php
-Filesystem::disk('s3')->delete('path/file.jpg');
+Filesystem::disk('aliyun')->delete('path/file.jpg');
 ```
  #### 目录
  ##### 获取目录下所有的文件
@@ -311,24 +391,28 @@ Filesystem::deleteDirectory($directory);
 >你可以在 系统服务 中注册一个带有 boot 方法的驱动。在提供者的 boot 方法中，你可以使用 Filesystem 门面的 extend 方法来定义一个自定义驱动：
 
 ```php
-use League\Flysystem\Filesystem;
-use Spatie\Dropbox\Client as DropboxClient;
-use Spatie\FlysystemDropbox\DropboxAdapter;
+use League\Flysystem\Filesystem as FlysystemFilesystem;
+use think\App;
+use think\Service;
+use watsonhaw\filesystem\facade\Filesystem;
+
+// 示例：接入一个自定义驱动（以假设的 ftp 适配器为例，实际需自行安装对应 flysystem 适配器包并保证与 league/flysystem 3.x 兼容）
+// use League\Flysystem\Ftp\FtpAdapter;
+// use League\Flysystem\Ftp\FtpConnectionOptions;
 
 class AppService extends Service
 {
     public function boot()
     {
-        Filesystem::extend('dropbox', function (App $app, array $config) {
-            $adapter = new DropboxAdapter(new DropboxClient(
-                $config['authorization_token']
-            ));
-           return new Filesystem($adapter, $config),
+        Filesystem::extend('ftp', function (App $app, array $config) {
+            // $adapter = new FtpAdapter(FtpConnectionOptions::fromArray($config));
+            // 闭包必须返回 League\Flysystem\Filesystem 实例
+            return new FlysystemFilesystem($adapter, $config);
         });
-   }
+    }
 }
 ```
-extend 方法的第一个参数是驱动程序的名称，第二个参数是接收 $app 和 $config 变量的闭包。闭包必须返回的实例 League\Flysystem\Filesystem。$config 变量包含 config/filesystems.php 为指定磁盘定义的值。
+extend 方法的第一个参数是驱动程序的名称，第二个参数是接收 `$app` 和 `$config` 变量的闭包。闭包必须返回 `League\Flysystem\Filesystem` 的实例。`$config` 变量包含 `config/filesystems.php` 中为该磁盘定义的全部配置。
 #### 授权
 
 MIT
