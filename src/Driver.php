@@ -73,7 +73,7 @@ abstract class Driver
         $this->config = array_merge($this->config, $config);
 
         $separator = $this->config['directory_separator'] ?? DIRECTORY_SEPARATOR;
-        $root      = $this->config['root']                     ?? '';
+        $root      = $this->config['root']                ?? '';
 
         if (isset($this->config['prefix'])) {
             $root = rtrim($root, '\\/') . $separator . ltrim($this->config['prefix'], '\\/');
