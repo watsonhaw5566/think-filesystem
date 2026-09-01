@@ -8,6 +8,7 @@ use watsonhaw\filesystem\driver\Local;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use ReflectionClass;
 use think\Cache;
+use ReflectionProperty;
 
 abstract class TestCase extends PHPUnitTestCase
 {
@@ -31,11 +32,12 @@ abstract class TestCase extends PHPUnitTestCase
         return $driver;
     }
 
-    protected function getPrivateProperty(string $class, string $name): \ReflectionProperty
+    protected function getPrivateProperty(string $class, string $name): ReflectionProperty
     {
         $reflection = new ReflectionClass($class);
-        $property = $reflection->getProperty($name);
+        $property   = $reflection->getProperty($name);
         $property->setAccessible(true);
+
         return $property;
     }
 

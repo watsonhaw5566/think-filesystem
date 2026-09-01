@@ -12,6 +12,7 @@ use League\Flysystem\FilesystemException;
 use League\Flysystem\UnableToReadFile;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use think\File;
+use Throwable;
 
 class DriverTest extends TestCase
 {
@@ -23,8 +24,8 @@ class DriverTest extends TestCase
     {
         parent::setUp();
         $this->driver = $this->createLocalDriver();
-        $prop = $this->getPrivateProperty(\watsonhaw\filesystem\Driver::class, 'config');
-        $config = $prop->getValue($this->driver);
+        $prop         = $this->getPrivateProperty(\watsonhaw\filesystem\Driver::class, 'config');
+        $config       = $prop->getValue($this->driver);
         $this->tmpDir = $config['root'];
     }
 
@@ -340,8 +341,9 @@ class DriverTest extends TestCase
 
     private function extractRootFromDriver($driver): string
     {
-        $prop = $this->getPrivateProperty(Driver::class, 'config');
+        $prop   = $this->getPrivateProperty(Driver::class, 'config');
         $config = $prop->getValue($driver);
+
         return $config['root'];
     }
 
@@ -381,7 +383,7 @@ class DriverTest extends TestCase
         $tmp = sys_get_temp_dir() . '/think_filesystem_upload2_' . uniqid() . '.txt';
         file_put_contents($tmp, 'file content');
 
-        $file = new File($tmp);
+        $file   = new File($tmp);
         $result = $this->driver->putFile('uploads2', $file);
 
         $this->assertIsString($result);
@@ -410,7 +412,7 @@ class DriverTest extends TestCase
         $tmp = sys_get_temp_dir() . '/think_filesystem_upl4_' . uniqid() . '.txt';
         file_put_contents($tmp, 'uploaded');
 
-        $file = new \think\file\UploadedFile($tmp, 'test.txt', 'text/plain', null, true);
+        $file   = new \think\file\UploadedFile($tmp, 'test.txt', 'text/plain', null, true);
         $result = $this->driver->put('target.txt', $file);
         $this->assertTrue($result);
         $this->assertSame('uploaded', $this->driver->get('target.txt'));
@@ -430,10 +432,11 @@ class DriverTest extends TestCase
     public function testReadOnlyPreventsWrite()
     {
         $driver = $this->createLocalDriver(['read-only' => true, 'throw' => true]);
+
         try {
             $driver->put('foo.txt', 'bar');
             $this->fail('Expected exception was not thrown');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->assertInstanceOf(FilesystemException::class, $e);
         }
 
@@ -490,7 +493,7 @@ class DriverTest extends TestCase
     public function testCustomDirectorySeparator()
     {
         $driver = $this->createLocalDriver(['directory_separator' => '/']);
-        $path = $driver->path('a/b/c.txt');
+        $path   = $driver->path('a/b/c.txt');
         $this->assertStringEndsWith('/a/b/c.txt', $path);
 
         $this->rmdirRecursive($this->extractRootFromDriver($driver));

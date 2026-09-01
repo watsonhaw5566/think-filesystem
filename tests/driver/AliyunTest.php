@@ -13,12 +13,12 @@ class AliyunTest extends TestCase
     public function testCreateAdapterReturnsOssAdapter()
     {
         $driver = new Aliyun($this->getMockCache(), [
-            'type' => 'aliyun',
-            'access_id' => 'test-id',
+            'type'          => 'aliyun',
+            'access_id'     => 'test-id',
             'access_secret' => 'test-secret',
-            'bucket' => 'test-bucket',
-            'endpoint' => 'oss-cn-hangzhou.aliyuncs.com',
-            'isCName' => false,
+            'bucket'        => 'test-bucket',
+            'endpoint'      => 'oss-cn-hangzhou.aliyuncs.com',
+            'isCName'       => false,
         ]);
 
         $adapter = $driver->getAdapter();
