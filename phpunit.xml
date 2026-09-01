@@ -7,7 +7,6 @@
          executionOrder="random"
          failOnRisky="true"
          failOnWarning="true"
-         requireCoverageMetadata="false"
          displayDetailsOnTestsThatTriggerDeprecations="true"
          displayDetailsOnTestsThatTriggerWarnings="true"
          displayDetailsOnTestsThatTriggerErrors="true"

@@ -1,6 +1,6 @@
 {
   "name": "watsonhaw/think-filesystem",
-  "description": "thinkphp 8.0 for filesystem oss,include Aliyun and Qiniu COS OBS",
+  "description": "thinkphp 8.0 for filesystem oss, include Aliyun and Qcloud COS",
   "type": "library",
   "require": {
     "php": "^8.0",
@@ -10,8 +10,6 @@
     "league/flysystem-path-prefixing": "^3.3",
     "league/flysystem-read-only": "^3.3",
     "yzh52521/flysystem-oss": "^3.0",
-    "yzh52521/flysystem-obs": "^3.0",
-    "overtrue/flysystem-qiniu": "^3.0",
     "overtrue/flysystem-cos": "^5.0.0",
     "voku/portable-ascii": "^2.0.0"
   },

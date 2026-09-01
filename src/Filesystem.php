@@ -54,7 +54,7 @@ class Filesystem extends Manager
      * 此方法用于调用自定义的驱动程序创建函数，以根据配置创建相应的实例
      * 它通过驱动类型来选择合适的创建函数，并将应用实例和配置数据传给它
      *
-     * @param string $type   驱动类型（例如 local / aliyun / qiniu / qcloud）
+     * @param string $type   驱动类型（例如 local / aliyun / qcloud）
      * @param array  $config 当前磁盘的完整配置数组
      * @return mixed 返回自定义驱动程序创建函数的返回值，具体类型取决于驱动程序的实现
      */
@@ -101,7 +101,7 @@ class Filesystem extends Manager
      */
     protected function createDriver(string $name): Driver
     {
-        // 根据磁盘名称解析驱动类型（例如 local / aliyun / qiniu / qcloud）
+        // 根据磁盘名称解析驱动类型（例如 local / aliyun / qcloud）
         $type = $this->resolveType($name);
 
         // 解析当前磁盘的完整配置（需要传给驱动的构造方法）
